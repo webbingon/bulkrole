@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>BulkRole</title>
+</head>
+
+<body>
+  <div class="main-header">
+    <h1 class="main-title">BulkRole</h1>
+    <div class="header-nav">
+      <button id="show-main-btn" class="nav-btn">メイン画面</button>
+      <button id="show-usage-btn" class="nav-btn">使い方</button>
+      <button id="show-settings-btn" class="nav-btn">設定</button>
+    </div>
+  </div>
+
+  <div class="container" id="settings-container">
+    <div class="guide-section">
+      <h2>設定手順</h2>
+
+      <div class="step-item">
+        <p>
+          BulkRoleの使用には、利用者ご自身でDiscordのBotを作成し、トークンと呼ばれるBotへアクセスするためのコードを発行し、その上で、BulkRoleを使用したいサーバーへBotを参加させる必要があります。本画面の指示に従い、その作業を行ってください。
+        </p>
+      </div>
+
+      <!-- 手順 1 -->
+      <div class="step-item">
+        <div class="step-title"><span>1.</span>Discord Developer Portal へアクセス</div>
+        <p><a id="portal-link" href="https://discord.com/developers/home" target="_blank" rel="noopener">Discord
+            Developer Portal</a>
+          へアクセスし、ご自身のDiscordアカウントでログインします。</p>
+      </div>
+
+      <!-- 手順 2 -->
+      <div class="step-item">
+        <div class="step-title"><span>2.</span>アプリケーションの新規作成</div>
+        <p>左側メニューの「アプリケーション」を選択し、右上の「新しいアプリケーション」ボタンをクリックして作成します。 (アプリケーションの名前は任意)</p>
+        <img src="images/step2-1.png" alt="アプリケーション作成画面" class="step-image" onerror="this.style.display='none'">
+        <img src="images/step2-2.png" alt="アプリケーション作成画面" class="step-image" onerror="this.style.display='none'">
+      </div>
+
+      <!-- 手順 3：ここにアプリID入力欄を配置 -->
+      <div class="step-item">
+        <div class="step-title"><span>3.</span>アプリIDの入力</div>
+        <p>左側メニューの「一般情報」をクリックし、記載されている「アプリID」をコピーして以下の欄に入力してください。</p>
+        <img src="images/step3.png" alt="アプリIDコピー画面" class="step-image" onerror="this.style.display='none'">
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label for="app-id">アプリID:</label>
+          <input type="text" id="app-id" placeholder="例: 1546110058998267985">
+        </div>
+      </div>
+
+      <!-- 手順 4：ここにトークン入力欄を配置 -->
+      <div class="step-item">
+        <div class="step-title"><span>4.</span>Botトークンの入力</div>
+        <p>左側メニュー「Bot」をクリックし、「トークンをリセット」をクリックして生成されたトークンをコピーし、以下の欄に入力してください。<b>なお、トークンは絶対に漏洩しないでください!
+            悪意ある者によってサーバーを乗っ取られる可能性があります!</b></p>
+        <img src="images/step4-1.png" alt="トークンリセット画面" class="step-image" onerror="this.style.display='none'">
+        <img src="images/step4-2.png" alt="トークンリセット画面" class="step-image" onerror="this.style.display='none'">
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label for="bot-token">トークン:</label>
+          <input type="password" id="bot-token" placeholder="トークンを貼り付け">
+        </div>
+      </div>
+
+      <!-- 手順 5 -->
+      <div class="step-item">
+        <div class="step-title"><span>5.</span>Server Members Intent の有効化</div>
+        <p>同じく「Bot」ページをスクロールし、「Privileged Gateway Intents」内にある「Server Members
+          Intent」トグルをONに切り替えて保存してください。メンバー情報の取得に必要な権限です。</p>
+        <img src="images/step5.png" alt="Intent有効化画面" class="step-image" onerror="this.style.display='none'">
+      </div>
+
+      <!-- 手順 6：動的生成リンクと保存ボタン -->
+      <div class="step-item" style="border-bottom: none;">
+        <div class="step-title"><span>6.</span>Botをサーバーに参加させる</div>
+        <p>以下のリンクをクリックして、対象サーバーへBotを追加してください。</p>
+
+        <div class="form-group" style="margin-top: 12px;">
+          <div class="invite-box">
+            <a id="invite-link" class="invite-link disabled" href="#" target="_blank">
+              ← アプリID・トークンを入力するとリンクが生成されます
+            </a>
+          </div>
+        </div>
+
+        <button id="settings-save-btn" class="continue-btn" disabled="true">設定を保存して次へ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="usage-container">
+    <div class="guide-section">
+      <h2>使い方</h2>
+
+      <div class="step-item">
+        <div class="step-title">BulkRoleとは</div>
+        <p>BulkRoleは、ユーザー名とロール名を対照させたリスト(CSVファイル)をもとに、一括で自動的にロールを付与することができるBotです。</p>
+      </div>
+
+      <div class="step-item">
+        <div class="step-title">リストの形式</div>
+        <p>BulkRoleに読み込ませるリストは、CSVファイルで作成してください。BulkRoleはCSVファイルを次のように扱います。</p>
+
+        <ul>
+          <li>1列目はユーザーの名前、2列目はそのユーザーに付与したいロールの名前。</li>
+          <li>ユーザー名は、ニックネーム (サーバー内の名前)、表示名、ユーザーネームの順に優先する。例えば、ニックネームが設定されておらず、表示名が設定されているユーザーの場合、ユーザー名には表示名を使用してください。
+          </li>
+          <li>1行目は列のラベルを入力するため無視する。</li>
+        </ul>
+      </div>
+
+      <div class="step-item">
+        <div class="step-title">注意点</div>
+        <ol>
+          <li>重複するユーザー名やロール名、サーバー名が設定されないようにしてください。重複していた場合、その名前にIDが併記されます。例えば「初心者」というロールが2つ存在した場合、「初心者 (ID:
+            XXXXXXXXXXXXXXXXX)」「初心者 (ID: YYYYYYYYYYYYYYYYY)」のように認識されます。</li>
+          <li>Discord APIのレート制限のため、ロールを付与する件数が多い場合には時間がかかります。</li>
+          <li>本ソフトウェアはMIT Licenseの下、配布されています。開発者は本ソフトウェアについて一切の責任を負いません。</li>
+        </ol>
+      </div>
+
+      <button id="usage-continue-btn" class="continue-btn">続行する</button>
+    </div>
+  </div>
+
+  <div class="container" id="main-container">
+    <div class="card-section">
+      <h3>Botの情報</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Bot名:</span>
+          <span id="bot-name" class="info-value">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">アプリID:</span>
+          <span id="bot-app-id" class="info-value">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">参加サーバー数:</span>
+          <span id="guild-count" class="info-value">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-section">
+      <h3>ロール付与</h3>
+      <div class="form-group">
+        <div class="label-row">
+          <label for="guild-select">対象のサーバー:</label>
+          <button type="button" id="refresh-guilds-btn" class="refresh-btn" title="サーバー一覧を更新">
+            🔄 再読み込み
+          </button>
+        </div>
+        <select id="guild-select" class="select-input" disabled>
+          <option value="">サーバーを読み込んでいます...</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="csv-file">CSVファイル:</label>
+        <input type="file" id="csv-file" accept=".csv">
+      </div>
+
+      <div class="form-group">
+        <label for="progress">進行状況 (完了/総数):</label>
+        <p id="progress">実行すると進行状況が表示されます</p>
+      </div>
+
+      <button id="execute-btn" class="execute-btn">実行</button>
+    </div>
+
+    <div class="card-section">
+      <h3>ログ</h3>
+      <textarea id="log-output" class="log-textarea" readonly placeholder="実行ログがここに表示されます..."></textarea>
+    </div>
+  </div>
+
+  <div id="error-toast" class="error-toast">
+    <span id="error-toast-message" class="error-toast-message">不明なエラーが発生しました。</span>
+    <button id="error-toast-close" class="error-toast-close" aria-label="閉じる">&times;</button>
+  </div>
+
+  <script type="module" src="/src/renderer.ts"></script>
+</body>
+
+</html>
