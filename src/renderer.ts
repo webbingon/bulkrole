@@ -30,6 +30,7 @@ import './index.css';
 import { elements } from './renderer/elements';
 import { showError, showPage, closeError, showNavBtn } from './renderer/ui';
 import { AppInfo } from './main/discord';
+import { ConfigStoreSchema } from './main/store';
 
 export interface IElectronAPI {
   onSentLog: (callback: (date: Date, type: 'info' | 'error', message: string) => void) => void;
@@ -38,9 +39,10 @@ export interface IElectronAPI {
   ) => void;
   fetchAppInfo: () => Promise<AppInfo>;
   executeBulkRole: (csvFile: File, guildId: string) => Promise<void>;
-  saveConfig: (config: { appId: string; botToken: string }) => Promise<boolean>;
-  getConfig: () => Promise<{ appId: string; botToken: string }>;
+  saveConfig: (config: ConfigStoreSchema) => Promise<boolean>;
+  getConfig: () => Promise<ConfigStoreSchema>;
   openExternal: (url: string) => void;
+  clearSettingsRestart: () => void;
 }
 
 declare global {
@@ -53,9 +55,15 @@ async function fetchAppInfo() {
   elements.guildSelect.disabled = true;
   elements.guildSelect.innerHTML = '<option value="">サーバーを読み込んでいます...</option>';
 
-  const appInfo = await window.api.fetchAppInfo();
+  let appInfo: AppInfo;
 
-  if (typeof appInfo === 'undefined') return;
+  try {
+    appInfo = await window.api.fetchAppInfo();
+  } catch (err) {
+    showError('Discord APIとの通信に失敗しました。トークンが誤っている可能性があります。');
+    console.error('Discord APIとの通信に失敗しました:', err);
+    return;
+  }
 
   elements.botNameField.innerText = appInfo.botName;
   elements.appIdField.innerText = appInfo.appId;
@@ -78,48 +86,56 @@ async function fetchAppInfo() {
   elements.guildSelect.disabled = false;
 }
 
-async function setupSettings() {
-  let isSettingsCompleted = false;
+async function initSetupContainer() {
+  let isSetupSettingsCompleted = false;
 
   const onSettingsInput = () => {
     const appId = elements.appIdInput.value.trim();
-    const botToken = elements.botTokenInput.value.trim();
+    const botToken = elements.setupBotTokenInput.value.trim();
 
     if (appId.length >= 17 && appId.length <= 19 && botToken.length > 0) {
       const url = `https://discord.com/oauth2/authorize?client_id=${appId}&permissions=1099780063232&integration_type=0&scope=bot`;
       elements.inviteLink.href = url;
       elements.inviteLink.textContent = 'Botをサーバーに招待する (クリック)';
       elements.inviteLink.classList.remove('disabled');
-      elements.settingsSaveBtn.disabled = false;
-      isSettingsCompleted = true;
+      elements.setupSaveBtn.disabled = false;
+      isSetupSettingsCompleted = true;
     } else {
       elements.inviteLink.href = '#';
       elements.inviteLink.textContent = '← アプリID・トークンを入力するとリンクが生成されます';
       elements.inviteLink.classList.add('disabled');
-      elements.settingsSaveBtn.disabled = true;
-      isSettingsCompleted = false;
+      elements.setupSaveBtn.disabled = true;
+      isSetupSettingsCompleted = false;
     }
   };
 
   elements.appIdInput.addEventListener('input', onSettingsInput);
-  elements.botTokenInput.addEventListener('input', onSettingsInput);
+  elements.setupBotTokenInput.addEventListener('input', onSettingsInput);
 
-  elements.settingsSaveBtn.addEventListener('click', async () => {
-    if (isSettingsCompleted) {
-      closeError();
-      elements.settingsSaveBtn.disabled = true;
-      const appId = elements.appIdInput.value.trim();
-      const botToken = elements.botTokenInput.value.trim();
-      await window.api.saveConfig({ appId, botToken });
-      elements.settingsSaveBtn.disabled = false;
-      showPage('usage');
-    } else {
-      showError('アプリID・トークンを正しく入力してください。');
+  elements.setupSaveBtn.addEventListener('click', async () => {
+    if (!isSetupSettingsCompleted) showError('アプリID・トークンを正しく入力してください。');
+
+    closeError();
+    elements.setupSaveBtn.disabled = true;
+    const botToken = elements.setupBotTokenInput.value.trim();
+
+    try {
+      await window.api.saveConfig({ botToken });
+    } catch (err) {
+      showError(
+        'トークンの保存に失敗しました。OSが暗号化機能をサポートしていない可能性があります。'
+      );
+      console.error('トークンの保存に失敗しました:', err);
+      elements.setupSaveBtn.disabled = false;
+      return;
     }
+
+    showPage('usage');
+    elements.setupSaveBtn.disabled = false;
   });
 }
 
-async function setupMain() {
+async function initMainContainer() {
   window.api.onSentLog((date, type, message) => {
     const text = `${date.toLocaleTimeString('ja-JP', {
       hour: '2-digit',
@@ -152,12 +168,57 @@ async function setupMain() {
     const selectedFile = files[0];
 
     closeError();
+    elements.executeBtn.disabled = true;
 
-    await window.api.executeBulkRole(selectedFile, guildName);
+    try {
+      await window.api.executeBulkRole(selectedFile, guildName);
+    } catch (err) {
+      showError('処理の実行に失敗しました。');
+      console.error('処理の実行に失敗しました:', err);
+    }
+
+    elements.executeBtn.disabled = false;
   });
 
   window.api.onProgressUpdate((currentCount, failedCount, totalCount) => {
-    elements.progressField.innerText = `${currentCount} (うち失敗: ${failedCount}) / ${totalCount}`;
+    elements.progressText.innerText = `${currentCount} (うち失敗: ${failedCount}) / ${totalCount}`;
+
+    const percent = (currentCount / totalCount) * 100;
+    elements.progressBar.innerText = `${percent}%`;
+    elements.progressBar.value = percent;
+  });
+}
+
+async function initSettingsContainer() {
+  const onSettingsInput = () => {
+    const botToken = elements.settingsBotTokenInput.value.trim();
+
+    if (botToken.length >= 1) {
+      elements.settingsSaveBtn.disabled = false;
+    } else {
+      elements.settingsSaveBtn.disabled = true;
+    }
+  };
+
+  elements.settingsBotTokenInput.addEventListener('input', onSettingsInput);
+
+  elements.settingsClearRestartBtn.addEventListener('click', window.api.clearSettingsRestart);
+
+  elements.settingsSaveBtn.addEventListener('click', async () => {
+    const botToken = elements.settingsBotTokenInput.value.trim();
+
+    elements.settingsSaveBtn.disabled = true;
+
+    try {
+      await window.api.saveConfig({ botToken });
+    } catch (err) {
+      showError('設定の保存に失敗しました。');
+      console.error('設定の保存に失敗しました:', err);
+      elements.settingsSaveBtn.disabled = false;
+    }
+
+    showPage('main');
+    elements.settingsSaveBtn.disabled = false;
   });
 }
 
@@ -175,8 +236,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  setupSettings();
-  setupMain();
+  initSetupContainer();
+  initMainContainer();
+  initSettingsContainer();
 
   elements.errorToastClose.addEventListener('click', closeError);
 
@@ -193,18 +255,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const savedConfig = await window.api.getConfig();
 
-    if (savedConfig.appId && savedConfig.botToken) {
-      elements.appIdInput.value = savedConfig.appId;
-      elements.botTokenInput.placeholder = '設定済み (非表示)';
+    if (savedConfig.botToken) {
       showPage('main');
       await fetchAppInfo();
       showNavBtn();
     } else {
-      showPage('settings');
+      showPage('setup');
     }
   } catch (err) {
     console.error(`Failed to load settings: ${err}`);
-    showPage('settings');
+    showPage('setup');
   }
 
   console.log('Done!');

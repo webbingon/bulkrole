@@ -211,3 +211,9 @@ async function executeBulkRole(csvFilePath: string, guildName: string) {
 ipcMain.handle('execute-bulkrole', async (_event, csvFilePath: string, guildName: string) => {
   await executeBulkRole(csvFilePath, guildName);
 });
+
+ipcMain.on('clear-settings-restart', () => {
+  configStore.saveConfig({ botToken: '' });
+  app.relaunch();
+  app.exit();
+});

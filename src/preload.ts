@@ -30,4 +30,5 @@ contextBridge.exposeInMainWorld('api', {
   getConfig: () => ipcRenderer.invoke('get-config'),
   // URLを受け取ってメインプロセスへ送信する
   openExternal: (url: string) => ipcRenderer.send('open-external-link', url),
+  clearSettingsRestart: () => ipcRenderer.send('clear-settings-restart'),
 });

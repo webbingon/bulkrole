@@ -1,22 +1,30 @@
 import { elements } from './elements';
 
-export function showPage(page: 'settings' | 'usage' | 'main') {
+export function showPage(page: 'setup' | 'usage' | 'main' | 'settings') {
   switch (page) {
-    case 'settings':
-      elements.settingsContainer.style.display = 'block';
+    case 'setup':
+      elements.setupContainer.style.display = 'block';
       elements.usageContainer.style.display = 'none';
       elements.mainContainer.style.display = 'none';
+      elements.settingsContainer.style.display = 'none';
       break;
     case 'usage':
-      elements.settingsContainer.style.display = 'none';
+      elements.setupContainer.style.display = 'none';
       elements.usageContainer.style.display = 'block';
       elements.mainContainer.style.display = 'none';
+      elements.settingsContainer.style.display = 'none';
       break;
     case 'main':
-      elements.settingsContainer.style.display = 'none';
+      elements.setupContainer.style.display = 'none';
       elements.usageContainer.style.display = 'none';
       elements.mainContainer.style.display = 'block';
+      elements.settingsContainer.style.display = 'none';
       break;
+    case 'settings':
+      elements.setupContainer.style.display = 'none';
+      elements.usageContainer.style.display = 'none';
+      elements.mainContainer.style.display = 'none';
+      elements.settingsContainer.style.display = 'block';
   }
 }
 

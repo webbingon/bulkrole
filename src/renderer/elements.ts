@@ -1,19 +1,20 @@
 export const elements = {
   // 画面コンテナ
-  settingsContainer: document.getElementById('settings-container') as HTMLElement,
+  setupContainer: document.getElementById('setup-container') as HTMLElement,
   usageContainer: document.getElementById('usage-container') as HTMLElement,
   mainContainer: document.getElementById('main-container') as HTMLElement,
+  settingsContainer: document.getElementById('settings-container') as HTMLElement,
 
   // ナビゲーション
   showMainBtn: document.getElementById('show-main-btn') as HTMLButtonElement,
   showUsageBtn: document.getElementById('show-usage-btn') as HTMLButtonElement,
   showSettingsBtn: document.getElementById('show-settings-btn') as HTMLButtonElement,
 
-  // 設定画面
+  // セットアップ画面
   appIdInput: document.getElementById('app-id') as HTMLInputElement,
-  botTokenInput: document.getElementById('bot-token') as HTMLInputElement,
+  setupBotTokenInput: document.getElementById('setup-bot-token') as HTMLInputElement,
   inviteLink: document.getElementById('invite-link') as HTMLAnchorElement,
-  settingsSaveBtn: document.getElementById('settings-save-btn') as HTMLButtonElement,
+  setupSaveBtn: document.getElementById('setup-save-btn') as HTMLButtonElement,
   usageContinueBtn: document.getElementById('usage-continue-btn') as HTMLButtonElement,
 
   // トースト
@@ -30,5 +31,11 @@ export const elements = {
   csvFileInput: document.getElementById('csv-file') as HTMLInputElement,
   executeBtn: document.getElementById('execute-btn') as HTMLButtonElement,
   logOutput: document.getElementById('log-output') as HTMLTextAreaElement,
-  progressField: document.getElementById('progress') as HTMLElement,
+  progressText: document.getElementById('progress-text') as HTMLElement,
+  progressBar: document.getElementById('progress-bar') as HTMLProgressElement,
+
+  // 設定画面
+  settingsBotTokenInput: document.getElementById('settings-bot-token') as HTMLInputElement,
+  settingsClearRestartBtn: document.getElementById('settings-clear-restart') as HTMLButtonElement,
+  settingsSaveBtn: document.getElementById('settings-save-btn') as HTMLButtonElement,
 };
