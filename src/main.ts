@@ -5,6 +5,7 @@ import { parse } from 'csv/sync';
 import { readFile } from 'fs/promises';
 import { ConfigStore, ConfigStoreSchema } from './main/store';
 import { DiscordRESTManager } from './main/discord';
+import iconv from 'iconv-lite';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -110,11 +111,26 @@ ipcMain.handle('fetch-app-info', async () => {
   return await restManager.fetchAppInfo();
 });
 
+async function readCSVFile(filePath: string): Promise<string> {
+  const buffer = await readFile(filePath);
+
+  if (buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf) {
+    return iconv.decode(buffer.subarray(3), 'utf8');
+  }
+
+  const utf8Text = buffer.toString('utf8');
+  if (!utf8Text.includes('\uFFFD')) {
+    return utf8Text;
+  }
+
+  return iconv.decode(buffer, 'shiftjis');
+}
+
 async function executeBulkRole(csvFilePath: string, guildName: string) {
   let roleUserList: string[][];
 
   try {
-    const csvFileContent = await readFile(csvFilePath, { encoding: 'utf-8' });
+    const csvFileContent = await readCSVFile(csvFilePath);
     roleUserList = parse(csvFileContent);
     roleUserList.shift();
   } catch (err) {
