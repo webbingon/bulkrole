@@ -4,17 +4,23 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent, webUtils } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
-  onShowError: (callback: (message: string) => void) => {
-    ipcRenderer.removeAllListeners('show-error');
-    ipcRenderer.on('show-error', (_event: IpcRendererEvent, message: string) => callback(message));
+  onSentLog: (callback: (date: Date, type: 'info' | 'error', message: string) => void) => {
+    ipcRenderer.removeAllListeners('send-log');
+    ipcRenderer.on(
+      'send-log',
+      (_event: IpcRendererEvent, date: Date, type: 'info' | 'error', message: string) =>
+        callback(date, type, message)
+    );
   },
-  onLog: (callback: (text: string) => void) => {
-    ipcRenderer.removeAllListeners('log');
-    ipcRenderer.on('log', (_event: IpcRendererEvent, text: string) => callback(text));
-  },
-  onProgressUpdate: (callback: (currentCount: number, failedCount: number, totalCount: number) => void) => {
+  onProgressUpdate: (
+    callback: (currentCount: number, failedCount: number, totalCount: number) => void
+  ) => {
     ipcRenderer.removeAllListeners('progress-update');
-    ipcRenderer.on('progress-update', (_event: IpcRendererEvent, currentCount: number, failedCount: number, totalCount: number) => callback(currentCount, failedCount, totalCount));
+    ipcRenderer.on(
+      'progress-update',
+      (_event: IpcRendererEvent, currentCount: number, failedCount: number, totalCount: number) =>
+        callback(currentCount, failedCount, totalCount)
+    );
   },
   fetchAppInfo: () => ipcRenderer.invoke('fetch-app-info'),
   executeBulkRole: (csvFile: File, guildName: string) =>

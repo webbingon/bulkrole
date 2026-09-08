@@ -1,17 +1,10 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
-import Store from 'electron-store';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { parse } from 'csv/sync';
 import { readFile } from 'fs/promises';
-import { REST } from '@discordjs/rest';
-import {
-  Routes,
-  RESTGetAPIGuildMembersResult,
-  RESTGetAPIGuildRolesResult,
-  RESTGetCurrentApplicationResult,
-  RESTGetAPICurrentUserGuildsResult,
-} from 'discord-api-types/v10';
+import { ConfigStore, ConfigStoreSchema } from './main/store';
+import { DiscordRESTManager } from './main/discord';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -66,29 +59,14 @@ app.on('activate', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-interface StoreSchema {
-  appId: string;
-  botToken: string;
-}
+const configStore = new ConfigStore();
 
-const store = new Store<StoreSchema>({
-  encryptionKey: 'your-app-secret-key',
-});
-
-ipcMain.handle('save-config', (_event, config: { appId: string; botToken: string }) => {
-  store.set('appId', config.appId);
-  store.set('botToken', config.botToken);
+ipcMain.handle('save-config', (_event, config: ConfigStoreSchema) => {
+  configStore.saveConfig(config);
   return true;
 });
 
-function getConfig(): { appId: string; botToken: string } {
-  return {
-    appId: store.get('appId', ''),
-    botToken: store.get('botToken', ''),
-  };
-}
-
-ipcMain.handle('get-config', () => getConfig());
+ipcMain.handle('get-config', () => configStore.getConfig());
 
 // 外部リンクを開くIPCハンドラー
 ipcMain.on('open-external-link', async (_event, url: string) => {
@@ -112,199 +90,68 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function showError(message: string) {
-  if (mainWindow) {
-    mainWindow.webContents.send('show-error', message);
-  }
-}
-
-function log(type: 'info' | 'error', message: string) {
+function sendLog(type: 'info' | 'error', message: string) {
   const date = new Date();
-  const text = `${date.toLocaleTimeString('ja-JP', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  })} ${type}: ${message}`;
-
-  if (mainWindow) {
-    mainWindow.webContents.send('log', text);
-  }
+  mainWindow?.webContents.send('send-log', date, type, message);
 }
 
-function createRESTClient() {
-  const botToken = getConfig().botToken;
-  return new REST({ version: '10' }).setToken(botToken);
-}
+function getDiscordRESTManager(): DiscordRESTManager {
+  const botToken = configStore.getConfig().botToken;
 
-let guildIdMap: Record<string, string> | undefined = undefined;
-
-async function fetchAppInfo() {
-  const rest = createRESTClient();
-
-  let app: RESTGetCurrentApplicationResult;
-
-  try {
-    app = (await rest.get(Routes.currentApplication())) as RESTGetCurrentApplicationResult;
-  } catch (err) {
-    log('error', `アプリ情報の取得に失敗しました: ${err}`);
-    showError('アプリ情報の取得に失敗しました。');
-    return;
+  if (!botToken) {
+    throw new Error('Botのトークンが設定されていません。');
   }
 
-  let guilds: RESTGetAPICurrentUserGuildsResult;
-
-  try {
-    guilds = (await rest.get(Routes.userGuilds())) as RESTGetAPICurrentUserGuildsResult;
-  } catch (err) {
-    log('error', `サーバー情報の取得に失敗しました: ${err}`);
-    showError('サーバー情報の取得に失敗しました。');
-    return;
-  }
-
-  const duplicateGuildNames: string[] = [];
-
-  guildIdMap = guilds.reduce<Record<string, string>>((acc, guild) => {
-    const guildName = guild.name;
-    const guildId = guild.id;
-
-    if (duplicateGuildNames.includes(guildName)) {
-      acc[`${guildName} (ID: ${guildId})`] = guildId;
-      return acc;
-    }
-
-    if (acc[guildName]) {
-      acc[`${guildName} (ID: ${acc[guildName]})`] = acc[guildName];
-      delete acc[guildName];
-      duplicateGuildNames.push(guildName);
-      return acc;
-    }
-
-    acc[guildName] = guildId;
-    return acc;
-  }, {});
-
-  const guildNames = Object.keys(guildIdMap);
-
-  return {
-    botName: app.bot?.username || '不明',
-    appId: app.id,
-    guildNames,
-  };
+  return new DiscordRESTManager(botToken);
 }
 
 ipcMain.handle('fetch-app-info', async () => {
-  return await fetchAppInfo();
+  const restManager = getDiscordRESTManager();
+  return await restManager.fetchAppInfo();
 });
 
 async function executeBulkRole(csvFilePath: string, guildName: string) {
   let roleUserList: string[][];
 
   try {
-    roleUserList = parse(await readFile(csvFilePath, { encoding: 'utf-8' }));
+    const csvFileContent = await readFile(csvFilePath, { encoding: 'utf-8' });
+    roleUserList = parse(csvFileContent);
+    roleUserList.shift();
   } catch (err) {
-    log('error', `CSVファイルの読み込みに失敗しました: ${err}`);
-    showError('CSVファイルの読み込みに失敗しました。');
-    return;
+    throw new Error('CSVファイルの読み込みに失敗しました。', { cause: err });
   }
 
-  roleUserList.shift();
+  const restManager = getDiscordRESTManager();
 
-  if (typeof guildIdMap === 'undefined') {
-    try {
-      await fetchAppInfo();
-      executeBulkRole(csvFilePath, guildName);
-      return;
-    } catch (err) {
-      log('error', `アプリ・サーバーに関する情報の取得に失敗しました: ${err}`);
-      showError('アプリ・サーバーに関する情報の取得に失敗しました。');
-      return;
-    }
-  }
-
+  const guildIdMap = await restManager.getGuildIdMap();
   const guildId = guildIdMap[guildName];
-
-  const rest = createRESTClient();
-
-  let members: RESTGetAPIGuildMembersResult;
-
-  try {
-    members = (await rest.get(Routes.guildMembers(guildId))) as RESTGetAPIGuildMembersResult;
-  } catch (err) {
-    log('error', `メンバー情報の取得に失敗しました: ${err}`);
-    showError('メンバ―情報の取得に失敗しました。');
-    return;
+  if (!guildId) {
+    throw new Error(`サーバー ${guildName} が見つかりませんでした。`);
   }
 
-  let roles: RESTGetAPIGuildRolesResult;
-
-  try {
-    roles = (await rest.get(Routes.guildRoles(guildId))) as RESTGetAPIGuildRolesResult;
-  } catch (err) {
-    log('error', `ロール情報の取得に失敗しました: ${err}`);
-    showError('ロール情報の取得に失敗しました。');
-    return;
-  }
-
-  const duplicateMemberNames: string[] = [];
-
-  const memberIdMap = members.reduce<Record<string, string>>((acc, member) => {
-    const memberName = member.nick ?? member.user?.global_name ?? member.user?.username;
-    const memberId = member.user.id;
-
-    if (duplicateMemberNames.includes(memberName)) {
-      acc[`${memberName} (ID: ${memberId})`] = memberId;
-      return acc;
-    }
-
-    if (acc[memberName]) {
-      acc[`${memberName} (ID: ${acc[memberName]})`] = acc[memberName];
-      delete acc[memberName];
-      duplicateMemberNames.push(memberName);
-      return acc;
-    }
-
-    acc[memberName] = memberId;
-    return acc;
-  }, {});
-
-  const duplicateRoleNames: string[] = [];
-
-  const roleIdMap = roles.reduce<Record<string, string>>((acc, role) => {
-    const roleName = role.name;
-    const memberId = role.id;
-
-    if (duplicateRoleNames.includes(roleName)) {
-      acc[`${roleName} (ID: ${memberId})`] = memberId;
-      return acc;
-    }
-
-    if (acc[roleName]) {
-      acc[`${roleName} (ID: ${acc[roleName]})`] = acc[roleName];
-      delete acc[roleName];
-      duplicateRoleNames.push(roleName);
-      return acc;
-    }
-
-    acc[roleName] = memberId;
-    return acc;
-  }, {});
+  const memberIdMap = await restManager.getMemberIdMap(guildId);
+  const roleIdMap = await restManager.getRoleIdMap(guildId);
 
   let progressCurrentCount: number = 0;
   let progressFailedCount: number = 0;
-  let progressTotalCount: number = roleUserList.length;
+  const progressTotalCount: number = roleUserList.length;
 
   function incrementProgress(type: 'success' | 'failed') {
     progressCurrentCount += 1;
 
-    if(type === 'failed') progressFailedCount += 1;
+    if (type === 'failed') progressFailedCount += 1;
 
-    if(mainWindow) {
-      mainWindow.webContents.send('progress-update', progressCurrentCount, progressFailedCount, progressTotalCount);
+    if (mainWindow) {
+      mainWindow.webContents.send(
+        'progress-update',
+        progressCurrentCount,
+        progressFailedCount,
+        progressTotalCount
+      );
     }
   }
 
-  async function setGuildMemberRole(
+  async function addGuildMemberRole(
     guildId: string,
     memberName: string,
     roleName: string
@@ -313,26 +160,23 @@ async function executeBulkRole(csvFilePath: string, guildName: string) {
     const roleId = roleIdMap[roleName];
 
     if (typeof memberId === 'undefined') {
-      log('error', `メンバー ${memberName} が見つかりませんでした。`);
+      sendLog('error', `メンバー ${memberName} が見つかりませんでした。`);
       incrementProgress('failed');
       return;
     }
 
     if (typeof roleId === 'undefined') {
-      log('error', `ロール ${roleName} が見つかりませんでした。`);
+      sendLog('error', `ロール ${roleName} が見つかりませんでした。`);
       incrementProgress('failed');
       return;
     }
 
     try {
-      await rest.put(Routes.guildMemberRole(guildId, memberId, roleId));
-      log(
-        'info',
-        `メンバー ${memberName} にロール ${roleName} を付与しました。`
-      );
+      await restManager.addGuildMemberRole(guildId, memberId, roleId);
+      sendLog('info', `メンバー ${memberName} にロール ${roleName} を付与しました。`);
       incrementProgress('success');
     } catch (err) {
-      log(
+      sendLog(
         'error',
         `メンバー ${memberName} にロール ${roleName} を付与できませんでした: ${err}`
       );
@@ -349,14 +193,9 @@ async function executeBulkRole(csvFilePath: string, guildName: string) {
         const memberName = item[0];
         const roleName = item[1];
 
-        if (
-          typeof memberName === 'undefined' ||
-          typeof roleName === 'undefined' ||
-          typeof guildIdMap === 'undefined'
-        )
-          return;
+        if (typeof memberName === 'undefined' || typeof roleName === 'undefined') return;
 
-        return setGuildMemberRole(guildId, memberName, roleName);
+        return addGuildMemberRole(guildId, memberName, roleName);
       })
     );
 
