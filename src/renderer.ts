@@ -51,6 +51,10 @@ declare global {
   }
 }
 
+function generateInviteURL(appId: string): string {
+  return `https://discord.com/oauth2/authorize?client_id=${appId}&permissions=1099780063232&integration_type=0&scope=bot`;
+}
+
 async function fetchAppInfo() {
   elements.guildSelect.disabled = true;
   elements.guildSelect.innerHTML = '<option value="">サーバーを読み込んでいます...</option>';
@@ -68,6 +72,9 @@ async function fetchAppInfo() {
   elements.botNameField.innerText = appInfo.botName;
   elements.appIdField.innerText = appInfo.appId;
   elements.guildCountField.innerText = String(appInfo.guildNames.length);
+  elements.mainInviteLink.href = generateInviteURL(appInfo.appId);
+  elements.mainInviteLink.textContent = 'Botをサーバーに招待する (クリック)';
+  elements.mainInviteLink.classList.remove('disabled');
 
   if (appInfo.guildNames.length === 0) {
     elements.guildSelect.innerHTML = '<option value="">参加しているサーバーが存在しません</option>';
@@ -90,26 +97,26 @@ async function initSetupContainer() {
   let isSetupSettingsCompleted = false;
 
   const onSettingsInput = () => {
-    const appId = elements.appIdInput.value.trim();
+    const appId = elements.setupAppIdInput.value.trim();
     const botToken = elements.setupBotTokenInput.value.trim();
 
     if (appId.length >= 17 && appId.length <= 19 && botToken.length > 0) {
-      const url = `https://discord.com/oauth2/authorize?client_id=${appId}&permissions=1099780063232&integration_type=0&scope=bot`;
-      elements.inviteLink.href = url;
-      elements.inviteLink.textContent = 'Botをサーバーに招待する (クリック)';
-      elements.inviteLink.classList.remove('disabled');
+      const url = generateInviteURL(appId);
+      elements.setupInviteLink.href = url;
+      elements.setupInviteLink.textContent = 'Botをサーバーに招待する (クリック)';
+      elements.setupInviteLink.classList.remove('disabled');
       elements.setupSaveBtn.disabled = false;
       isSetupSettingsCompleted = true;
     } else {
-      elements.inviteLink.href = '#';
-      elements.inviteLink.textContent = '← アプリID・トークンを入力するとリンクが生成されます';
-      elements.inviteLink.classList.add('disabled');
+      elements.setupInviteLink.href = '#';
+      elements.setupInviteLink.textContent = '← アプリID・トークンを入力するとリンクが生成されます';
+      elements.setupInviteLink.classList.add('disabled');
       elements.setupSaveBtn.disabled = true;
       isSetupSettingsCompleted = false;
     }
   };
 
-  elements.appIdInput.addEventListener('input', onSettingsInput);
+  elements.setupAppIdInput.addEventListener('input', onSettingsInput);
   elements.setupBotTokenInput.addEventListener('input', onSettingsInput);
 
   elements.setupSaveBtn.addEventListener('click', async () => {
@@ -117,10 +124,11 @@ async function initSetupContainer() {
 
     closeError();
     elements.setupSaveBtn.disabled = true;
+    const appId = elements.setupAppIdInput.value.trim();
     const botToken = elements.setupBotTokenInput.value.trim();
 
     try {
-      await window.api.saveConfig({ botToken });
+      await window.api.saveConfig({ appId, botToken });
     } catch (err) {
       showError(
         'トークンの保存に失敗しました。OSが暗号化機能をサポートしていない可能性があります。'
@@ -191,26 +199,29 @@ async function initMainContainer() {
 
 async function initSettingsContainer() {
   const onSettingsInput = () => {
+    const appId = elements.settingsAppIdInput.value.trim();
     const botToken = elements.settingsBotTokenInput.value.trim();
 
-    if (botToken.length >= 1) {
+    if ((appId.length >= 17 && appId.length <= 19) || botToken.length >= 1) {
       elements.settingsSaveBtn.disabled = false;
     } else {
       elements.settingsSaveBtn.disabled = true;
     }
   };
 
+  elements.settingsAppIdInput.addEventListener('input', onSettingsInput);
   elements.settingsBotTokenInput.addEventListener('input', onSettingsInput);
 
   elements.settingsClearRestartBtn.addEventListener('click', window.api.clearSettingsRestart);
 
   elements.settingsSaveBtn.addEventListener('click', async () => {
+    const appId = elements.settingsAppIdInput.value.trim();
     const botToken = elements.settingsBotTokenInput.value.trim();
 
     elements.settingsSaveBtn.disabled = true;
 
     try {
-      await window.api.saveConfig({ botToken });
+      await window.api.saveConfig({ appId: appId || undefined, botToken: botToken || undefined });
     } catch (err) {
       showError('設定の保存に失敗しました。');
       console.error('設定の保存に失敗しました:', err);

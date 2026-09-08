@@ -231,7 +231,7 @@ ipcMain.handle('execute-bulkrole', async (_event, csvFilePath: string, guildName
 });
 
 ipcMain.on('clear-settings-restart', () => {
-  configStore.saveConfig({ botToken: '' });
+  configStore.clearConfig();
   app.relaunch();
   app.exit();
 });

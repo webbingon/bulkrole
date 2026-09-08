@@ -11,9 +11,9 @@ export const elements = {
   showSettingsBtn: document.getElementById('show-settings-btn') as HTMLButtonElement,
 
   // セットアップ画面
-  appIdInput: document.getElementById('app-id') as HTMLInputElement,
+  setupAppIdInput: document.getElementById('setup-app-id') as HTMLInputElement,
   setupBotTokenInput: document.getElementById('setup-bot-token') as HTMLInputElement,
-  inviteLink: document.getElementById('invite-link') as HTMLAnchorElement,
+  setupInviteLink: document.getElementById('setup-invite-link') as HTMLAnchorElement,
   setupSaveBtn: document.getElementById('setup-save-btn') as HTMLButtonElement,
   usageContinueBtn: document.getElementById('usage-continue-btn') as HTMLButtonElement,
 
@@ -26,6 +26,7 @@ export const elements = {
   botNameField: document.getElementById('bot-name') as HTMLElement,
   appIdField: document.getElementById('bot-app-id') as HTMLElement,
   guildCountField: document.getElementById('guild-count') as HTMLElement,
+  mainInviteLink: document.getElementById('main-invite-link') as HTMLAnchorElement,
   guildSelect: document.getElementById('guild-select') as HTMLSelectElement,
   refreshGuildsBtn: document.getElementById('refresh-guilds-btn') as HTMLButtonElement,
   csvFileInput: document.getElementById('csv-file') as HTMLInputElement,
@@ -35,6 +36,7 @@ export const elements = {
   progressBar: document.getElementById('progress-bar') as HTMLProgressElement,
 
   // 設定画面
+  settingsAppIdInput: document.getElementById('settings-app-id') as HTMLInputElement,
   settingsBotTokenInput: document.getElementById('settings-bot-token') as HTMLInputElement,
   settingsClearRestartBtn: document.getElementById('settings-clear-restart') as HTMLButtonElement,
   settingsSaveBtn: document.getElementById('settings-save-btn') as HTMLButtonElement,

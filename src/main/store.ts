@@ -2,6 +2,7 @@ import { app, safeStorage } from 'electron';
 import Store from 'electron-store';
 
 export interface ConfigStoreSchema {
+  appId?: string;
   botToken?: string;
   isBotTokenEncrypted?: boolean;
 }
@@ -14,6 +15,7 @@ export class ConfigStore {
   }
 
   getConfig(): ConfigStoreSchema {
+    const appId = this.store.get('appId');
     const isBotTokenEncrypted = this.store.get('isBotTokenEncrypted', false) as boolean;
     const botToken = this.store.get('botToken', '') as string;
 
@@ -35,12 +37,20 @@ export class ConfigStore {
     }
 
     return {
+      appId,
       botToken,
+      isBotTokenEncrypted,
     };
   }
 
   saveConfig(config: ConfigStoreSchema): void {
+    if (config.appId) this.store.set('appId', config.appId);
     if (typeof config.botToken !== 'undefined') this.setBotToken(config.botToken);
+  }
+
+  clearConfig(): void {
+    this.store.delete('appId');
+    this.setBotToken('');
   }
 
   setBotToken(token: string): void {

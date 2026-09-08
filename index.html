@@ -49,8 +49,8 @@
         <img src="images/step3.png" alt="アプリIDコピー画面" class="step-image" onerror="this.style.display='none'">
 
         <div class="form-group" style="margin-top: 12px;">
-          <label for="app-id">アプリID:</label>
-          <input type="text" id="app-id" placeholder="例: 1546110058998267985">
+          <label for="setup-app-id">アプリID:</label>
+          <input type="text" id="setup-app-id" placeholder="例: 1546110058998267985">
         </div>
       </div>
 
@@ -83,7 +83,7 @@
 
         <div class="form-group" style="margin-top: 12px;">
           <div class="invite-box">
-            <a id="invite-link" class="invite-link disabled" href="#" target="_blank">
+            <a id="setup-invite-link" class="invite-link disabled" href="#" target="_blank">
               ← アプリID・トークンを入力するとリンクが生成されます
             </a>
           </div>
@@ -148,6 +148,10 @@
           <span class="info-label">参加サーバー数:</span>
           <span id="guild-count" class="info-value">-</span>
         </div>
+        <div class="info-item">
+          <span class="info-label">招待リンク:</span>
+          <a id="main-invite-link" class="invite-link disabled">-</a>
+        </div>
       </div>
     </div>
 
@@ -190,10 +194,14 @@
       <h2>設定</h2>
 
       <div class="form-group">
+        <label for="settings-app-id">アプリID:</label>
+        <input type="text" id="settings-app-id" placeholder="例: 1546110058998267985">
+      </div>
+
+      <div class="form-group">
         <label for="settings-bot-token">Botのトークン:</label>
         <input type="password" id="settings-bot-token" placeholder="トークンを貼り付け">
       </div>
-
 
       <button id="settings-clear-restart" class="primary-btn danger-btn">設定を消去しアプリを再起動</button>
       <button id="settings-save-btn" class="primary-btn" disabled="true">設定を保存</button>
