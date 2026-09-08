@@ -36,7 +36,6 @@ export const elements = {
   progressBar: document.getElementById('progress-bar') as HTMLProgressElement,
 
   // 設定画面
-  settingsAppIdInput: document.getElementById('settings-app-id') as HTMLInputElement,
   settingsBotTokenInput: document.getElementById('settings-bot-token') as HTMLInputElement,
   settingsClearRestartBtn: document.getElementById('settings-clear-restart') as HTMLButtonElement,
   settingsSaveBtn: document.getElementById('settings-save-btn') as HTMLButtonElement,

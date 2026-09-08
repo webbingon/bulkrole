@@ -124,11 +124,10 @@ async function initSetupContainer() {
 
     closeError();
     elements.setupSaveBtn.disabled = true;
-    const appId = elements.setupAppIdInput.value.trim();
     const botToken = elements.setupBotTokenInput.value.trim();
 
     try {
-      await window.api.saveConfig({ appId, botToken });
+      await window.api.saveConfig({ botToken });
     } catch (err) {
       showError(
         'トークンの保存に失敗しました。OSが暗号化機能をサポートしていない可能性があります。'
@@ -199,29 +198,26 @@ async function initMainContainer() {
 
 async function initSettingsContainer() {
   const onSettingsInput = () => {
-    const appId = elements.settingsAppIdInput.value.trim();
     const botToken = elements.settingsBotTokenInput.value.trim();
 
-    if ((appId.length >= 17 && appId.length <= 19) || botToken.length >= 1) {
+    if (botToken.length >= 1) {
       elements.settingsSaveBtn.disabled = false;
     } else {
       elements.settingsSaveBtn.disabled = true;
     }
   };
 
-  elements.settingsAppIdInput.addEventListener('input', onSettingsInput);
   elements.settingsBotTokenInput.addEventListener('input', onSettingsInput);
 
   elements.settingsClearRestartBtn.addEventListener('click', window.api.clearSettingsRestart);
 
   elements.settingsSaveBtn.addEventListener('click', async () => {
-    const appId = elements.settingsAppIdInput.value.trim();
     const botToken = elements.settingsBotTokenInput.value.trim();
 
     elements.settingsSaveBtn.disabled = true;
 
     try {
-      await window.api.saveConfig({ appId: appId || undefined, botToken: botToken || undefined });
+      await window.api.saveConfig({ botToken: botToken || undefined });
     } catch (err) {
       showError('設定の保存に失敗しました。');
       console.error('設定の保存に失敗しました:', err);
