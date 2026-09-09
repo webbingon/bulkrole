@@ -2,7 +2,7 @@
   "name": "bulkrole",
   "productName": "bulkrole",
   "version": "1.0.1",
-  "description": "My Electron application description",
+  "description": "An app for assigning roles in bulk on Discord.",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
