@@ -117,7 +117,12 @@ export class DiscordRESTManager {
   async getMemberIdMap(guildId: string): Promise<Record<string, string>> {
     const members = await this.runGetRequestByREST<RESTGetAPIGuildMembersResult>(
       Routes.guildMembers(guildId),
-      'メンバー情報の取得に失敗しました。'
+      'メンバー情報の取得に失敗しました。',
+      {
+        query: new URLSearchParams({
+          limit: '1000',
+        }),
+      }
     );
 
     const memberIdMap = this.createIdMap<APIGuildMember>(
