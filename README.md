@@ -4,7 +4,7 @@ BulkRoleは、Discordにおいて、ユーザー名とロール名を対照さ�
 
 ## インストール
 
-1. [GitHub Releases](https://github.com/webbingon/bulkrole/releases) から `bulkrole-x.x.x-win32-x64.zip` をダウンロードする。
+1. [GitHub Releases](https://github.com/webbingon/bulkrole/releases) から `bulkrole-win32-x64-x.x.x.zip` をダウンロードする。
 2. ZIP ファイルを解凍する。
 3. フォルダ内の `bulkrole.exe` を実行するとアプリが起動します。画面の指示に従って設定してください。
 
